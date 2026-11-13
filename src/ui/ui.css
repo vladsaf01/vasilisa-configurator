@@ -1,0 +1,1504 @@
+/* Василиса — конструктор встроенного шкафа.
+   Стили панели параметров и фронтального чертежа.
+   Все селекторы с префиксом .ui- — чтобы не конфликтовать с каркасом и сайтом. */
+
+/* ============================================================
+   Панель
+   ============================================================ */
+
+.ui-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
+  padding: 20px 22px 30px;
+}
+
+/* ---------- Шапка панели ---------- */
+
+.ui-head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ui-eyebrow {
+  margin: 0;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--dim, #8a8074);
+}
+
+.ui-title {
+  margin: 2px 0 0;
+  font-family: var(--font-serif, Georgia, 'Times New Roman', serif);
+  font-size: 32px;
+  font-weight: 500;
+  line-height: 1.1;
+  letter-spacing: -0.015em;
+  color: var(--text, #f3ede4);
+}
+
+.ui-head-dims {
+  margin: 4px 0 0;
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+  color: var(--accent, #d8c3a5);
+}
+
+.ui-head-sub {
+  margin: 2px 0 0;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--muted, #b9afa3);
+}
+
+/* ---------- Блоки ---------- */
+
+.ui-block {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+  padding-top: 18px;
+  border-top: 1px solid var(--line, #2e2a25);
+  transition: gap 0.26s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Свёрнутый раздел — только шапка, без пустого зазора под ней */
+.ui-block.is-collapsed {
+  gap: 0;
+}
+
+.ui-block-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 28px;
+}
+
+/* Заголовок раздела — кнопка-аккордеон: стрелка вместо прежнего номера (01, 02, …) */
+.ui-block-heading {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font: inherit;
+}
+
+.ui-block-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 28px;
+  margin: 0 -6px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.16s;
+}
+
+.ui-block-toggle:hover {
+  background: rgba(216, 195, 165, 0.06);
+}
+
+.ui-block-toggle:focus-visible {
+  outline: 2px solid var(--accent, #d8c3a5);
+  outline-offset: 1px;
+}
+
+.ui-block-caret {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  color: var(--dim, #8a8074);
+  transition: transform 0.24s ease, color 0.16s;
+}
+
+.ui-block-toggle:hover .ui-block-caret {
+  color: var(--accent, #d8c3a5);
+}
+
+.ui-block.is-collapsed .ui-block-caret {
+  transform: rotate(-90deg);
+}
+
+.ui-block-title {
+  margin: 0;
+  font-family: var(--font-sans, 'Segoe UI', system-ui, sans-serif);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted, #b9afa3);
+  white-space: nowrap;
+  transition: color 0.16s;
+}
+
+.ui-block-toggle:hover .ui-block-title {
+  color: var(--text, #f3ede4);
+}
+
+.ui-block-line {
+  flex: 1;
+  height: 1px;
+  min-width: 12px;
+  background: linear-gradient(90deg, var(--line-2, #3a352e), transparent);
+}
+
+/* Тело раздела: строка сетки 1fr ↔ 0fr даёт плавное сворачивание по высоте */
+.ui-block-body {
+  display: grid;
+  grid-template-rows: 1fr;
+  min-height: 0;
+  transition: grid-template-rows 0.26s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.ui-block-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.ui-block.is-collapsed .ui-block-body {
+  grid-template-rows: 0fr;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-block,
+  .ui-block-body,
+  .ui-block-caret,
+  .ui-block-toggle,
+  .ui-block-title {
+    transition: none;
+  }
+}
+
+.ui-block-note {
+  margin: -4px 0 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--muted, #b9afa3);
+}
+
+.ui-note {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: var(--dim, #8a8074);
+}
+
+/* ---------- Счётчик секций в шапке блока ---------- */
+
+.ui-count {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  border: 1px solid var(--line-2, #3a352e);
+  border-radius: 10px;
+  background: var(--bg, #141412);
+  overflow: hidden;
+}
+
+.ui-count-btn {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text, #f3ede4);
+  font-size: 17px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.16s, color 0.16s;
+}
+
+.ui-count-btn:hover:not(:disabled) {
+  background: rgba(216, 195, 165, 0.12);
+  color: var(--accent-2, #e8d5b5);
+}
+
+.ui-count-btn:disabled {
+  color: var(--line-2, #3a352e);
+  cursor: default;
+}
+
+.ui-count-value {
+  min-width: 34px;
+  padding: 0 2px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent, #d8c3a5);
+  border-left: 1px solid var(--line, #2e2a25);
+  border-right: 1px solid var(--line, #2e2a25);
+  line-height: 40px;
+}
+
+/* ---------- Габариты: поле с ползунком ---------- */
+
+.ui-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ui-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.ui-field-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.ui-field-label {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text, #f3ede4);
+  cursor: pointer;
+}
+
+.ui-field-hint {
+  font-size: 11.5px;
+  color: var(--dim, #8a8074);
+  font-variant-numeric: tabular-nums;
+}
+
+.ui-field-row {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 40px;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.ui-step {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid var(--line-2, #3a352e);
+  border-radius: 10px;
+  background: var(--bg-3, #201f1b);
+  color: var(--text, #f3ede4);
+  font-size: 17px;
+  line-height: 1;
+  cursor: pointer;
+  transition: border-color 0.16s, color 0.16s, background 0.16s;
+}
+
+.ui-step:hover:not(:disabled) {
+  border-color: var(--accent, #d8c3a5);
+  color: var(--accent-2, #e8d5b5);
+}
+
+.ui-step:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.ui-num-wrap {
+  position: relative;
+  display: block;
+  min-width: 0;
+}
+
+.ui-num {
+  width: 100%;
+  height: 40px;
+  padding: 0 40px 0 12px;
+  border: 1px solid var(--line-2, #3a352e);
+  border-radius: 10px;
+  background: var(--bg, #141412);
+  color: var(--text, #f3ede4);
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+  text-align: right;
+  transition: border-color 0.16s, box-shadow 0.16s;
+}
+
+.ui-num:hover {
+  border-color: var(--line-2, #3a352e);
+}
+
+.ui-num:focus {
+  outline: none;
+  border-color: var(--accent, #d8c3a5);
+  box-shadow: 0 0 0 3px rgba(216, 195, 165, 0.12);
+}
+
+.ui-num-unit {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  transform: translateY(-50%);
+  font-size: 11.5px;
+  color: var(--dim, #8a8074);
+  pointer-events: none;
+}
+
+/* Кастомный ползунок */
+.ui-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 22px;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  touch-action: pan-y;
+}
+
+.ui-range::-webkit-slider-runnable-track {
+  height: 3px;
+  border-radius: 99px;
+  background: var(--line-2, #3a352e);
+}
+
+.ui-range::-moz-range-track {
+  height: 3px;
+  border-radius: 99px;
+  background: var(--line-2, #3a352e);
+}
+
+.ui-range::-moz-range-progress {
+  height: 3px;
+  border-radius: 99px;
+  background: var(--accent, #d8c3a5);
+}
+
+.ui-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  margin-top: -7.5px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--accent, #d8c3a5);
+  box-shadow: 0 0 0 3px rgba(20, 20, 18, 0.9), 0 2px 6px rgba(0, 0, 0, 0.4);
+  transition: background 0.16s, transform 0.16s;
+}
+
+.ui-range::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--accent, #d8c3a5);
+  box-shadow: 0 0 0 3px rgba(20, 20, 18, 0.9), 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.ui-range:hover::-webkit-slider-thumb {
+  background: var(--accent-2, #e8d5b5);
+}
+
+.ui-range:active::-webkit-slider-thumb {
+  transform: scale(1.08);
+}
+
+.ui-range:focus-visible {
+  outline: 2px solid var(--accent, #d8c3a5);
+  outline-offset: 4px;
+  border-radius: 99px;
+}
+
+/* ---------- Чипы ---------- */
+
+.ui-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+
+.ui-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 40px;
+  padding: 8px 14px;
+  border: 1px solid var(--line, #2e2a25);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted, #b9afa3);
+  font-family: inherit;
+  font-size: 12.5px;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: border-color 0.16s, color 0.16s, background 0.16s;
+}
+
+.ui-chip:hover {
+  border-color: var(--accent, #d8c3a5);
+  color: var(--text, #f3ede4);
+}
+
+.ui-chip.is-active {
+  border-color: var(--accent, #d8c3a5);
+  background: rgba(216, 195, 165, 0.12);
+  color: var(--accent-2, #e8d5b5);
+}
+
+
+
+/* ---------- Секции и наполнение ---------- */
+
+.ui-sec-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ui-sec-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px 8px;
+  border: 1px solid var(--line, #2e2a25);
+  border-radius: var(--radius-sm, 10px);
+  background: rgba(32, 31, 27, 0.55);
+}
+
+.ui-sec-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(58, 53, 46, 0.5);
+}
+
+.ui-sec-name {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text, #f3ede4);
+}
+
+.ui-sec-width {
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--dim, #8a8074);
+}
+
+.ui-sec-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 40px;
+}
+
+.ui-sec-label {
+  font-size: 13px;
+  color: var(--muted, #b9afa3);
+}
+
+/* Компактный переключатель створок внутри карточки секции */
+.ui-sec-row .ui-seg {
+  grid-auto-columns: auto;
+  border-radius: 9px;
+}
+
+.ui-sec-row .ui-seg-btn {
+  height: 34px;
+  padding: 0 10px;
+  font-size: 12px;
+}
+
+/* ---------- Счётчик ---------- */
+
+.ui-counter {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  border: 1px solid var(--line-2, #3a352e);
+  border-radius: 9px;
+  background: var(--bg, #141412);
+  overflow: hidden;
+}
+
+.ui-counter-btn {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text, #f3ede4);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.16s, color 0.16s;
+}
+
+.ui-counter-btn:hover:not(:disabled) {
+  background: rgba(216, 195, 165, 0.12);
+  color: var(--accent-2, #e8d5b5);
+}
+
+.ui-counter-btn:disabled {
+  color: var(--line-2, #3a352e);
+  cursor: default;
+}
+
+.ui-counter-value {
+  min-width: 32px;
+  padding: 0 2px;
+  border-left: 1px solid var(--line, #2e2a25);
+  border-right: 1px solid var(--line, #2e2a25);
+  text-align: center;
+  font-size: 13.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent, #d8c3a5);
+  line-height: 40px;
+}
+
+/* ---------- Итоговая строка ---------- */
+
+.ui-totals {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  padding: 10px 12px;
+  border: 1px solid rgba(58, 53, 46, 0.6);
+  border-radius: var(--radius-sm, 10px);
+  background: rgba(216, 195, 165, 0.04);
+  font-size: 12px;
+  color: var(--muted, #b9afa3);
+}
+
+.ui-totals b {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent-2, #e8d5b5);
+}
+
+.ui-totals-sep {
+  width: 1px;
+  height: 12px;
+  background: var(--line-2, #3a352e);
+}
+
+/* ---------- Свитчи ---------- */
+
+.ui-switch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  min-height: 44px;
+  padding: 4px 0;
+}
+
+.ui-switch-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ui-switch-label {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--text, #f3ede4);
+}
+
+.ui-switch-hint {
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--dim, #8a8074);
+}
+
+/* Кнопка 50×40 — удобная зона нажатия, трек внутри рисуется псевдоэлементом */
+.ui-switch {
+  position: relative;
+  flex: 0 0 auto;
+  width: 50px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.ui-switch::before {
+  content: '';
+  position: absolute;
+  top: 7px;
+  left: 2px;
+  width: 46px;
+  height: 26px;
+  border: 1px solid var(--line-2, #3a352e);
+  border-radius: 999px;
+  background: var(--bg, #141412);
+  transition: background 0.18s, border-color 0.18s;
+}
+
+.ui-switch-knob {
+  position: absolute;
+  top: 11px;
+  left: 6px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--dim, #8a8074);
+  transition: transform 0.18s ease, background 0.18s ease;
+}
+
+.ui-switch.is-on::before {
+  border-color: var(--accent, #d8c3a5);
+  background: rgba(216, 195, 165, 0.16);
+}
+
+.ui-switch.is-on .ui-switch-knob {
+  transform: translateX(20px);
+  background: var(--accent-2, #e8d5b5);
+}
+
+
+/* ---------- Список свитчей ---------- */
+
+.ui-switch-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 2px;
+}
+
+/* ---------- Скрытый текст для скринридеров ---------- */
+
+.ui-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+/* ---------- Сегментированный контрол ---------- */
+
+.ui-seg {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  border: 1px solid var(--line-2, #3a352e);
+  border-radius: 12px;
+  background: var(--bg, #141412);
+  overflow: hidden;
+}
+
+.ui-seg-btn {
+  height: 44px;
+  padding: 0 8px;
+  border: 0;
+  background: transparent;
+  color: var(--muted, #b9afa3);
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.16s, color 0.16s;
+}
+
+.ui-seg-btn + .ui-seg-btn {
+  border-left: 1px solid var(--line, #2e2a25);
+}
+
+.ui-seg-btn:hover {
+  color: var(--text, #f3ede4);
+}
+
+.ui-seg-btn.is-active {
+  background: rgba(216, 195, 165, 0.14);
+  color: var(--accent-2, #e8d5b5);
+  font-weight: 600;
+}
+
+/* ---------- Материалы ---------- */
+
+.ui-sub {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ui-sub-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.ui-sub-title {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted, #b9afa3);
+}
+
+.ui-sub-value {
+  font-size: 12px;
+  color: var(--accent, #d8c3a5);
+}
+
+.ui-swatches {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  min-width: 0;
+}
+
+.ui-swatch {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  min-height: 40px;
+  padding: 6px 9px;
+  border: 1px solid var(--line, #2e2a25);
+  border-radius: 9px;
+  background: transparent;
+  cursor: pointer;
+  transition: border-color 0.16s, background 0.16s;
+}
+
+.ui-swatch:hover {
+  border-color: var(--line-2, #3a352e);
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.ui-swatch.is-active {
+  border-color: var(--accent, #d8c3a5);
+  background: rgba(216, 195, 165, 0.08);
+}
+
+.ui-swatch-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.ui-swatch-dot {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.28), 0 0 0 1px rgba(255, 255, 255, 0.07);
+}
+
+.ui-swatch.is-active .ui-swatch-dot {
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.28), 0 0 0 2px var(--accent, #d8c3a5);
+}
+
+.ui-swatch-name {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 11.5px;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted, #b9afa3);
+}
+
+.ui-swatch.is-active .ui-swatch-name {
+  color: var(--text, #f3ede4);
+}
+
+.ui-swatch:has(.ui-swatch-input:focus-visible) {
+  outline: 2px solid var(--accent, #d8c3a5);
+  outline-offset: 2px;
+}
+
+.ui-swatch-input:focus-visible + .ui-swatch-dot {
+  outline: 2px solid var(--accent, #d8c3a5);
+  outline-offset: 2px;
+}
+
+.ui-facade-note {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--dim, #8a8074);
+}
+
+.ui-facade-note b {
+  font-weight: 600;
+  color: var(--muted, #b9afa3);
+}
+
+/* ---------- Цена ---------- */
+
+.ui-price {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px 16px 14px;
+  border: 1px solid var(--line-2, #3a352e);
+  border-radius: var(--radius, 14px);
+  background:
+    radial-gradient(120% 90% at 100% 0%, rgba(216, 195, 165, 0.07) 0%, transparent 62%),
+    linear-gradient(180deg, rgba(32, 31, 27, 0.9), rgba(26, 26, 23, 0.95));
+}
+
+.ui-price-top {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ui-price-label {
+  margin: 0;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--dim, #8a8074);
+}
+
+.ui-price-value {
+  margin: 2px 0 0;
+  font-size: 34px;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--text, #f3ede4);
+}
+
+.ui-price-approx {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted, #b9afa3);
+}
+
+.ui-price-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(58, 53, 46, 0.7);
+}
+
+.ui-price-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ui-price-line-main {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.ui-price-line-label {
+  font-size: 12.5px;
+  line-height: 1.35;
+  color: var(--muted, #b9afa3);
+}
+
+.ui-price-line-detail {
+  font-size: 10.5px;
+  line-height: 1.35;
+  color: var(--dim, #8a8074);
+  font-variant-numeric: tabular-nums;
+}
+
+.ui-price-line-amount {
+  flex: 0 0 auto;
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text, #f3ede4);
+}
+
+.ui-price-line--sum {
+  padding-top: 8px;
+  border-top: 1px solid rgba(58, 53, 46, 0.7);
+}
+
+.ui-price-line--sum .ui-price-line-label {
+  font-size: 12px;
+  color: var(--muted, #b9afa3);
+}
+
+.ui-price-line--sum .ui-price-line-amount {
+  font-weight: 600;
+}
+
+.ui-price-meta {
+  margin: 0;
+  font-size: 10.5px;
+  color: var(--dim, #8a8074);
+  font-variant-numeric: tabular-nums;
+}
+
+.ui-disclaimer {
+  margin: 0;
+  padding-top: 10px;
+  border-top: 1px solid rgba(58, 53, 46, 0.5);
+  font-size: 10.5px;
+  line-height: 1.55;
+  color: var(--dim, #8a8074);
+}
+
+.ui-disclaimer-strong {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted, #b9afa3);
+}
+
+/* ---------- Действия ---------- */
+
+.ui-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ui-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 1px solid var(--line-2, #3a352e);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text, #f3ede4);
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.25;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.18s, color 0.18s, background 0.18s, opacity 0.18s;
+}
+
+.ui-btn:hover:not(:disabled) {
+  border-color: var(--accent, #d8c3a5);
+  color: var(--accent-2, #e8d5b5);
+}
+
+.ui-btn:disabled {
+  opacity: 0.42;
+  cursor: default;
+}
+
+.ui-btn--primary {
+  border-color: var(--accent, #d8c3a5);
+  background: var(--accent, #d8c3a5);
+  color: #1b1a16;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.ui-btn--primary:hover:not(:disabled) {
+  border-color: var(--accent-2, #e8d5b5);
+  background: var(--accent-2, #e8d5b5);
+  color: #1b1a16;
+}
+
+.ui-btn--wide {
+  width: 100%;
+}
+
+.ui-btn.is-done {
+  border-color: var(--ok, #7fae8b);
+  color: var(--ok, #7fae8b);
+}
+
+.ui-actions-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.ui-actions-row .ui-btn {
+  font-size: 12px;
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
+.ui-actions-files {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.ui-actions-files .ui-btn {
+  min-height: 40px;
+  padding: 8px 8px;
+  font-size: 11.5px;
+  border-radius: 10px;
+}
+
+.ui-actions-files .ui-btn:last-child {
+  grid-column: 1 / -1;
+}
+
+.ui-actions-note {
+  margin: 2px 0 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--dim, #8a8074);
+}
+
+.ui-reset {
+  align-self: flex-start;
+  min-height: 40px;
+  margin-top: 2px;
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  color: var(--dim, #8a8074);
+  font-family: inherit;
+  font-size: 12px;
+  text-decoration: underline;
+  text-decoration-color: var(--line-2, #3a352e);
+  text-underline-offset: 4px;
+  cursor: pointer;
+  transition: color 0.16s;
+}
+
+.ui-reset:hover {
+  color: var(--danger, #c98b7a);
+  text-decoration-color: currentColor;
+}
+
+/* ---------- Скоро в конструкторе ---------- */
+
+.ui-chips--future {
+  gap: 7px;
+}
+
+.ui-future-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 32px;
+  padding: 6px 11px;
+  border: 1px dashed var(--line-2, #3a352e);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--dim, #8a8074);
+  font-family: inherit;
+  font-size: 12px;
+  cursor: default;
+}
+
+.ui-badge {
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: rgba(216, 195, 165, 0.1);
+  color: var(--accent, #d8c3a5);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* ============================================================
+   Адаптив
+   ============================================================ */
+
+@media (max-width: 480px) {
+  .ui-panel {
+    gap: 20px;
+    padding: 16px 14px 26px;
+  }
+
+  .ui-block-toggle {
+    min-height: 34px;
+  }
+
+  .ui-title {
+    font-size: 27px;
+  }
+
+  .ui-head-dims {
+    font-size: 14px;
+  }
+
+  .ui-actions-row,
+  .ui-actions-files {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ui-actions-files .ui-btn {
+    min-height: 44px;
+    font-size: 12.5px;
+  }
+
+  .ui-price-value {
+    font-size: 30px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-switch-knob,
+  .ui-btn,
+  .ui-chip,
+  .ui-swatch,
+  .ui-range::-webkit-slider-thumb {
+    transition: none;
+  }
+}
+
+/* ============================================================
+   Переключатель типа мебели: встроенный шкаф / комод
+   ============================================================ */
+
+.ui-product-switch {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  min-width: 0;
+  padding: 4px;
+  border: 1px solid var(--line-2, #3a352e);
+  border-radius: 14px;
+  background: var(--bg, #141412);
+}
+
+.ui-product-switch-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 0;
+  min-height: 46px;
+  padding: 8px 10px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted, #b9afa3);
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: background 0.18s, border-color 0.18s, color 0.18s;
+}
+
+.ui-product-switch-btn:hover {
+  background: rgba(216, 195, 165, 0.06);
+  color: var(--text, #f3ede4);
+}
+
+.ui-product-switch-btn.is-active {
+  border-color: rgba(216, 195, 165, 0.55);
+  background: rgba(216, 195, 165, 0.14);
+  color: var(--accent-2, #e8d5b5);
+  font-weight: 600;
+}
+
+.ui-product-switch-btn:focus-visible {
+  outline: 2px solid var(--accent, #d8c3a5);
+  outline-offset: 2px;
+}
+
+.ui-product-switch-icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+}
+
+.ui-product-switch-icon svg {
+  display: block;
+  width: 21px;
+  height: 21px;
+}
+
+.ui-product-switch-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* На узких экранах длинная подпись «Встроенный шкаф» уступает короткой «Шкаф» */
+.ui-product-switch-short {
+  display: none;
+}
+
+@media (max-width: 400px) {
+  .ui-product-switch-long {
+    display: none;
+  }
+
+  .ui-product-switch-short {
+    display: inline;
+  }
+
+  .ui-product-switch-btn {
+    gap: 7px;
+    min-height: 48px;
+    padding: 8px 6px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-product-switch-btn {
+    transition: none;
+  }
+}
+
+/* ============================================================
+   Комод: тип секции, подвал карточки секции
+   ============================================================ */
+
+/* Типов секции четыре — раскладываем кнопки 2×2, чтобы подписи не сжимались */
+.ui-dresser-kind .ui-seg {
+  grid-auto-flow: row;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--line, #2e2a25);
+}
+
+.ui-dresser-kind .ui-seg-btn {
+  height: 44px;
+  padding: 0 10px;
+  background: var(--bg, #141412);
+  font-size: 12.5px;
+}
+
+.ui-dresser-kind .ui-seg-btn + .ui-seg-btn {
+  border-left: 0;
+}
+
+.ui-dresser-kind .ui-seg-btn.is-active {
+  background: rgba(216, 195, 165, 0.14);
+}
+
+.ui-sec-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 10px;
+  padding-top: 7px;
+  border-top: 1px solid rgba(58, 53, 46, 0.5);
+}
+
+.ui-sec-copy {
+  min-height: 32px;
+  padding: 4px 6px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--dim, #8a8074);
+  font-family: inherit;
+  font-size: 11.5px;
+  line-height: 1.3;
+  text-decoration: underline;
+  text-decoration-color: var(--line-2, #3a352e);
+  text-underline-offset: 3px;
+  cursor: pointer;
+  transition: color 0.16s, background 0.16s;
+}
+
+.ui-sec-copy:hover:not(:disabled) {
+  background: rgba(216, 195, 165, 0.07);
+  color: var(--accent-2, #e8d5b5);
+}
+
+.ui-sec-copy:disabled {
+  opacity: 0.42;
+  cursor: default;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-sec-copy {
+    transition: none;
+  }
+}
+
+/* ============================================================
+   Три изделия в переключателе: шкаф / комод / тумба
+   ============================================================ */
+
+.ui-product-switch--three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+/* Иконка над подписью — длинные названия помещаются в узкую треть панели */
+.ui-product-switch--three .ui-product-switch-btn {
+  flex-direction: column;
+  gap: 3px;
+  min-height: 58px;
+  padding: 7px 4px;
+}
+
+.ui-product-switch--three .ui-product-switch-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.ui-product-switch--three .ui-product-switch-label {
+  max-width: 100%;
+  font-size: 11.5px;
+}
+
+@media (max-width: 400px) {
+  .ui-product-switch--three .ui-product-switch-btn {
+    gap: 2px;
+    min-height: 54px;
+    padding: 6px 2px;
+  }
+
+  .ui-product-switch--three .ui-product-switch-icon svg {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+/* ============================================================
+   Тумба: три типа секций
+   ============================================================ */
+
+.ui-tumba-kind .ui-seg-btn {
+  padding: 0 6px;
+  font-size: 12px;
+}
+
+@media (max-width: 360px) {
+  .ui-tumba-kind .ui-seg-btn {
+    padding: 0 4px;
+    font-size: 11px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-product-switch--three .ui-product-switch-btn {
+    transition: none;
+  }
+}
+
+/* ============================================================
+   Четыре изделия в переключателе: шкаф / комод / тумба / кровать
+   ============================================================ */
+
+.ui-product-switch--four {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+/* Иконка над короткой подписью — так четыре вкладки читаются в узкой панели */
+.ui-product-switch--four .ui-product-switch-btn {
+  flex-direction: column;
+  gap: 3px;
+  min-height: 56px;
+  padding: 7px 2px;
+}
+
+.ui-product-switch--four .ui-product-switch-icon svg {
+  width: 19px;
+  height: 19px;
+}
+
+.ui-product-switch--four .ui-product-switch-label {
+  max-width: 100%;
+  font-size: 11px;
+}
+
+.ui-product-switch--four .ui-product-switch-long {
+  display: none;
+}
+
+.ui-product-switch--four .ui-product-switch-short {
+  display: inline;
+}
+
+@media (max-width: 400px) {
+  .ui-product-switch--four .ui-product-switch-btn {
+    gap: 2px;
+    min-height: 52px;
+    padding: 6px 1px;
+  }
+
+  .ui-product-switch--four .ui-product-switch-icon svg {
+    width: 17px;
+    height: 17px;
+  }
+
+  .ui-product-switch--four .ui-product-switch-label {
+    font-size: 10px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-product-switch--four .ui-product-switch-btn {
+    transition: none;
+  }
+}
+
+/* ============================================================
+   Кровать: четыре типа изголовья и четыре стиля ручек
+   ============================================================ */
+
+/* Длинные подписи не влезают в строку из четырёх — раскладываем 2×2 */
+.ui-bed-headboard .ui-seg,
+.ui-bed-handles .ui-seg {
+  grid-auto-flow: row;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--line, #2e2a25);
+}
+
+.ui-bed-headboard .ui-seg-btn,
+.ui-bed-handles .ui-seg-btn {
+  height: 44px;
+  padding: 0 8px;
+  background: var(--bg, #141412);
+  font-size: 12.5px;
+}
+
+.ui-bed-headboard .ui-seg-btn + .ui-seg-btn,
+.ui-bed-handles .ui-seg-btn + .ui-seg-btn {
+  border-left: 0;
+}
+
+.ui-bed-headboard .ui-seg-btn.is-active,
+.ui-bed-handles .ui-seg-btn.is-active {
+  background: rgba(216, 195, 165, 0.14);
+}
+
+@media (max-width: 360px) {
+  .ui-bed-headboard .ui-seg-btn,
+  .ui-bed-handles .ui-seg-btn {
+    padding: 0 5px;
+    font-size: 11.5px;
+  }
+}
