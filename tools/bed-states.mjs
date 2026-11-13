@@ -135,6 +135,34 @@ const clickSegment = async (group, option, label) => {
   return true;
 };
 
+/** Первое найденное имя группы из списка кандидатов (подписи могли поменяться). */
+const findGroup = async (names) => {
+  for (const name of names) {
+    if ((await page.getByRole('group', { name, exact: true }).count()) > 0) return name;
+  }
+  return null;
+};
+
+/**
+ * Клик по сегменту с терпимостью к переименованию: перебираем сначала группы,
+ * внутри них — варианты подписи. Так скрипт переживает правки текстов панели.
+ */
+const clickAnySegment = async (groupNames, optionNames, label) => {
+  for (const group of groupNames) {
+    const groupLocator = page.getByRole('group', { name: group, exact: true });
+    if ((await groupLocator.count()) === 0) continue;
+    for (const option of optionNames) {
+      const button = groupLocator.getByRole('button', { name: option, exact: true });
+      if ((await button.count()) === 0) continue;
+      await button.first().click();
+      console.log(`click  ${group} → ${option}`);
+      return { group, option };
+    }
+  }
+  check(false, `не найдена кнопка «${label ?? optionNames[0]}»`, `группы: ${groupNames.join(' / ')}`);
+  return null;
+};
+
 const activeProduct = async () =>
   page.evaluate(() => {
     const active = document.querySelector('.ui-product-switch-btn.is-active');
@@ -200,12 +228,251 @@ try {
       titles.join(' | '),
     );
   }
+  check(
+    !titles.some((t) => norm(t) === 'дополнительно'),
+    'блока «Дополнительно» нет (опция ДВП убрана)',
+    titles.join(' | '),
+  );
+
+  /* ===== 2b. Геометрия изголовья: низкая спинка-полка + высокая стенка ===== */
+  stage = '2b геометрия';
+  const geo = await page.evaluate(async () => {
+    try {
+      const bed = await import('/src/lib/bed.ts');
+      const state = JSON.parse(localStorage.getItem('vasilisa.configurator.v2') || 'null');
+      const params = bed.normalizeBedParams(state ? state.bed : undefined);
+      const layout = bed.buildBedLayout(params);
+      const parts = bed.buildBedParts(params, layout);
+      return {
+        params,
+        height: layout.height,
+        totalHeight: layout.totalHeight,
+        back: layout.headboard.back,
+        side: layout.headboard.side,
+        sideLen: layout.sideLen,
+        drawerCount: layout.drawerFronts.length,
+        parts: parts.map((part) => ({
+          role: part.role,
+          label: part.label,
+          plane: part.profilePlane ?? null,
+          points: part.profile ? part.profile.length : 0,
+          shape: part.shape ?? 'box',
+        })),
+      };
+    } catch (error) {
+      return { error: String(error) };
+    }
+  });
+  check(!geo.error, 'модель кровати импортируется для проверки', String(geo.error ?? ''));
+  if (!geo.error) {
+    console.log('геометрия по умолчанию:', JSON.stringify({
+      height: geo.height,
+      totalHeight: geo.totalHeight,
+      back: geo.back,
+      side: geo.side,
+      sideLen: geo.sideLen,
+      params: {
+        headboard: geo.params.headboard,
+        headboardHeight: geo.params.headboardHeight,
+        wallSide: geo.params.wallSide,
+        wallHeight: geo.params.wallHeight,
+        wallLength: geo.params.wallLength,
+      },
+    }));
+    check(geo.back && geo.back.y1 > geo.height, 'спинка-полка выше столешницы', JSON.stringify(geo.back));
+    check(
+      geo.side && geo.side.y1 - geo.height >= 100,
+      'стенка по длине выше столешницы минимум на 100 мм',
+      JSON.stringify(geo.side),
+    );
+    check(
+      geo.side && geo.side.z1 - geo.side.z0 >= 600,
+      'длина стенки не меньше 600 мм',
+      geo.side ? `${geo.side.z1 - geo.side.z0}` : 'стенки нет',
+    );
+    check(
+      geo.side && geo.side.x1 <= geo.params.width / 2 + 1 && geo.side.x0 >= -geo.params.width / 2 - 1,
+      'стенка не выходит за габарит кровати',
+      geo.side ? `x ${geo.side.x0}…${geo.side.x1}` : 'стенки нет',
+    );
+    const roles = geo.parts.map((part) => part.role);
+    check(
+      roles.includes('headboard') && roles.includes('headboardSide'),
+      'в деталях есть и спинка-полка, и стенка',
+      roles.join(', '),
+    );
+    const shelfPart = geo.parts.find((part) => part.role === 'headboard');
+    check(
+      shelfPart && shelfPart.plane === 'xy' && shelfPart.points >= 4,
+      'спинка-полка — выдавленный профиль',
+      JSON.stringify(shelfPart ?? null),
+    );
+    const wallPart = geo.parts.find((part) => part.role === 'headboardSide');
+    check(
+      wallPart && wallPart.plane === 'zy' && wallPart.points >= 10,
+      'стенка — выдавленный профиль со скруглением (точек профиля ≥ 10)',
+      JSON.stringify(wallPart ?? null),
+    );
+    const partLabels = [...new Set(geo.parts.map((part) => part.label))];
+    console.log('детали кровати:', partLabels.join(', '));
+    check(
+      partLabels.includes('Спинка-полка') && partLabels.includes('Стенка по длине'),
+      'в деталях есть «Спинка-полка» и «Стенка по длине»',
+      partLabels.join(', '),
+    );
+    check(geo.drawerCount === 2, 'по умолчанию 2 фасада ящиков', String(geo.drawerCount));
+  }
+
+  /* ===== 2c. Факты модели: дефолт, пресеты, цена ===== */
+  stage = '2c факты модели';
+  const facts = await page.evaluate(async () => {
+    try {
+      const bed = await import('/src/lib/bed.ts');
+      const describe = (rawParams) => {
+        const params = bed.normalizeBedParams(rawParams);
+        const layout = bed.buildBedLayout(params);
+        const parts = bed.buildBedParts(params, layout);
+        const wall = parts.find((part) => part.role === 'headboardSide');
+        const shelf = parts.find((part) => part.role === 'headboard');
+        const price = bed.calcBedPrice(params, layout);
+        return {
+          params: {
+            width: params.width,
+            length: params.length,
+            height: params.height,
+            headboard: params.headboard,
+            headboardHeight: params.headboardHeight,
+            wallSide: params.wallSide,
+            wallHeight: params.wallHeight,
+            wallLength: params.wallLength,
+            drawers: params.drawers,
+            base: params.base,
+            baseHeight: params.baseHeight,
+            body: params.body,
+            deck: params.deck,
+            handles: params.handles,
+          },
+          sideLen: layout.sideLen,
+          totalHeight: layout.totalHeight,
+          drawerFronts: layout.drawerFronts.length,
+          hasWall: Boolean(layout.headboard.side),
+          wallProfilePlane: wall ? wall.profilePlane : null,
+          wallProfilePoints: wall && wall.profile ? wall.profile.length : 0,
+          shelfProfilePlane: shelf ? shelf.profilePlane : null,
+          price: {
+            total: price.total,
+            goods: price.goods,
+            assembly: price.assembly,
+            delivery: price.delivery,
+          },
+        };
+      };
+      return {
+        default: describe(bed.BED_DEFAULT),
+        presets: bed.BED_PRESETS.map((preset) => ({
+          id: preset.id,
+          label: preset.label,
+          facts: describe(bed.applyBedPreset(bed.BED_DEFAULT, preset.patch)),
+        })),
+      };
+    } catch (error) {
+      return { error: String(error) };
+    }
+  });
+  check(!facts.error, 'факты модели (bed.ts) доступны', String(facts.error ?? ''));
+  if (!facts.error) {
+    const d = facts.default;
+    const eq = (left, right) => left === right;
+    console.log('дефолт модели:', JSON.stringify({ params: d.params, price: d.price, sideLen: d.sideLen }));
+    check(eq(d.params.width, 900) && eq(d.params.length, 2000), 'дефолт: 900 × 2 000 мм', `${d.params.width} × ${d.params.length}`);
+    check(eq(d.params.height, 450), 'дефолт: каркас 450 мм', `${d.params.height}`);
+    check(eq(d.params.headboard, 'wave') && eq(d.params.headboardHeight, 240), 'дефолт: «волна» + спинка-полка 240 мм', `${d.params.headboard} / ${d.params.headboardHeight}`);
+    check(
+      eq(d.params.wallSide, 'left') && eq(d.params.wallHeight, 400) && eq(d.params.wallLength, 1800),
+      'дефолт: стенка слева 1 800 × 400 мм',
+      `${d.params.wallSide} ${d.params.wallLength} × ${d.params.wallHeight}`,
+    );
+    check(d.sideLen <= d.params.length - 200 + 0.5, 'длина стенки ≤ длина кровати − 200 мм', `${d.sideLen} ≤ ${d.params.length - 200}`);
+    check(eq(d.drawerFronts, 2), 'дефолт: 2 фасада ящиков', `${d.drawerFronts}`);
+    check(eq(d.params.base, 'plinth') && eq(d.params.baseHeight, 60), 'дефолт: цоколь 60 мм', `${d.params.base} ${d.params.baseHeight}`);
+    check(
+      eq(d.params.body, 'white') && eq(d.params.deck, 'oak') && eq(d.params.handles, 'cutout'),
+      'дефолт: белый корпус + дуб, вырез в фасаде',
+      `${d.params.body} / ${d.params.deck} / ${d.params.handles}`,
+    );
+    check(
+      d.wallProfilePlane === 'zy' && d.wallProfilePoints >= 10,
+      'дефолт: скруглённый торец стенки (профиль zy, ≥ 10 точек)',
+      `${d.wallProfilePlane} / ${d.wallProfilePoints}`,
+    );
+    check(d.price.total === 34600, 'дефолт: цена модели 34 600 ₽', `${d.price.total}`);
+    check(
+      d.price.goods === 25592 && d.price.assembly === 5500 && d.price.delivery === 3500,
+      'дефолт: изделие 25 592 + монтаж 5 500 + доставка 3 500',
+      `${d.price.goods} + ${d.price.assembly} + ${d.price.delivery}`,
+    );
+
+    const presetExpected = [
+      { id: 'photo', label: 'Как на фото', width: 900, length: 2000, height: 450, headboard: 'wave', wallSide: 'left', wallHeight: 400, wallLength: 1800, drawerFronts: 2, base: 'plinth', baseHeight: 60, wallPoints: 'arc' },
+      { id: 'single', label: 'Односпальная', width: 900, length: 2000, height: 450, headboard: 'straight', drawerFronts: 2, base: 'legs', baseHeight: 80, wall: false },
+      { id: 'corner', label: 'Угловая', width: 1200, length: 2000, height: 460, headboard: 'corner', headboardHeight: 260, wallSide: 'left', wallHeight: 440, wallLength: 1600, drawerFronts: 3, base: 'plinth', baseHeight: 80, wallPoints: 'straight' },
+      { id: 'double', label: 'Двуспальная', width: 1600, length: 2000, headboard: 'straight', headboardHeight: 280, drawerFronts: 4, base: 'legs', baseHeight: 100, wall: false },
+      { id: 'podium', label: 'Подиум', width: 1200, length: 2000, headboard: 'none', drawerFronts: 3, base: 'plinth', baseHeight: 60, wall: false },
+    ];
+    const presetById = Object.fromEntries(facts.presets.map((row) => [row.id, row.facts]));
+    for (const expected of presetExpected) {
+      const preset = presetById[expected.id];
+      if (!preset) {
+        check(false, `пресет «${expected.label}» есть в модели`);
+        continue;
+      }
+      const actual = { ...preset.params, drawerFronts: preset.drawerFronts };
+      const mismatches = Object.entries(expected)
+        .filter(([key]) => !['id', 'label', 'wall', 'wallPoints'].includes(key))
+        .filter(([key, value]) => actual[key] !== value)
+        .map(([key, value]) => `${key}: ${JSON.stringify(actual[key])} ≠ ${JSON.stringify(value)}`);
+      check(mismatches.length === 0, `пресет «${expected.label}»: параметры совпадают`, mismatches.join('; '));
+      if (expected.wall === false) {
+        check(preset.hasWall === false, `пресет «${expected.label}»: стенки нет`, String(preset.hasWall));
+      } else if (preset.hasWall) {
+        check(
+          preset.sideLen <= preset.params.length - 200 + 0.5,
+          `пресет «${expected.label}»: длина стенки ≤ длина − 200`,
+          `${preset.sideLen} ≤ ${preset.params.length - 200}`,
+        );
+        if (expected.wallPoints === 'arc') {
+          check(
+            preset.wallProfilePlane === 'zy' && preset.wallProfilePoints >= 10,
+            `пресет «${expected.label}»: торец стенки скруглён`,
+            `${preset.wallProfilePlane} / ${preset.wallProfilePoints}`,
+          );
+        } else if (expected.wallPoints === 'straight') {
+          check(
+            preset.wallProfilePlane === 'zy' && preset.wallProfilePoints === 4,
+            `пресет «${expected.label}»: торец стенки прямой`,
+            `${preset.wallProfilePlane} / ${preset.wallProfilePoints}`,
+          );
+        }
+      } else {
+        check(false, `пресет «${expected.label}»: стенка не построена`);
+      }
+    }
+  }
 
   const bedDims = await headDims();
   const bedPriceText = await priceValue();
   const bedPriceNum = Number(bedPriceText.replace(/[^\d]/g, ''));
   check(/₽/.test(bedPriceText), 'в панели есть цена в ₽', bedPriceText);
   check(bedPriceNum > 20000, 'цена кровати > 20 000 ₽', `${bedPriceText} → ${bedPriceNum}`);
+  check(
+    normSp(bedPriceText) === '34 600 ₽',
+    'цена в панели по умолчанию 34 600 ₽',
+    JSON.stringify(bedPriceText),
+  );
+  check(
+    (await page.getByRole('switch', { name: 'Задняя стенка ДВП' }).count()) === 0,
+    'переключателя «Задняя стенка ДВП» нет',
+  );
   const bedSub = (
     await page.locator('.ui-head-sub').first().innerText().catch(() => '')
   ).trim();
@@ -267,39 +534,73 @@ try {
   await presetShot('Подиум', 'bed-07-podium.png');
   await presetShot('Двуспальная', 'bed-08-double.png');
 
-  // bed-09: вернуть «Как на фото», затем сторона изголовья «Слева».
+  // bed-09: вернуть «Как на фото», затем сторона стенки «Слева».
   await click(page.getByRole('button', { name: 'Как на фото', exact: true }), 'Как на фото');
   await page.waitForTimeout(600);
-  const sideGroupCount = await page
-    .getByRole('group', { name: 'Сторона изголовья', exact: true })
-    .count();
-  check(sideGroupCount > 0, 'у «волны» есть группа «Сторона изголовья»');
-  if (sideGroupCount > 0) {
-    await clickSegment('Сторона изголовья', 'Слева', 'bed-09');
+  const sideGroup = await findGroup(['Сторона стенки', 'Сторона изголовья']);
+  check(Boolean(sideGroup), 'у «волны» есть группа выбора стороны стенки', String(sideGroup));
+  if (sideGroup) {
+    // Проверяем само переключение: справа, затем обратно на «Слева».
+    const rightClick = await clickAnySegment([sideGroup], ['Справа'], 'Справа');
+    await page.waitForTimeout(700);
+    if (rightClick) {
+      const pressedRight = await page
+        .getByRole('group', { name: sideGroup, exact: true })
+        .getByRole('button', { name: 'Справа', exact: true })
+        .getAttribute('aria-pressed');
+      check(pressedRight === 'true', 'сторона стенки переключается на «Справа»', String(pressedRight));
+      check((await panelText()).includes('справа'), 'подпись панели показывает стенку справа');
+    }
+    const sideClick = await clickAnySegment([sideGroup], ['Слева'], 'Слева');
     await page.waitForTimeout(900);
-    const pressed = await page
-      .getByRole('group', { name: 'Сторона изголовья', exact: true })
-      .getByRole('button', { name: 'Слева', exact: true })
-      .getAttribute('aria-pressed');
-    check(pressed === 'true', 'сторона изголовья «Слева» выбрана', String(pressed));
+    if (sideClick) {
+      const pressed = await page
+        .getByRole('group', { name: sideGroup, exact: true })
+        .getByRole('button', { name: 'Слева', exact: true })
+        .getAttribute('aria-pressed');
+      check(pressed === 'true', 'сторона стенки «Слева» выбрана', String(pressed));
+      check((await panelText()).includes('слева'), 'подпись панели показывает стенку слева');
+    }
   }
   await shot('bed-09-wave-left.png', 0);
 
   /* ===== 4. Типы изголовья ===== */
   stage = '4 изголовье';
-  const headboardOptions = ['Прямая спинка', 'Без изголовья', 'Угловая спинка', 'Угловая «волна»'];
-  for (const option of headboardOptions) {
+  // Новые подписи — первыми, старые оставлены на случай откатов правки.
+  const headboardVariants = [
+    ['Спинка-полка', 'Прямая спинка'],
+    ['Без изголовья'],
+    ['Угловая: спинка + стенка', 'Угловая спинка'],
+    ['Угловая «волна»'],
+  ];
+  for (const names of headboardVariants) {
     const before = errors.length;
-    const clicked = await clickSegment('Тип изголовья', option, option);
+    const clicked = await clickAnySegment(['Тип изголовья'], names, names[0]);
     await page.waitForTimeout(800);
-    if (clicked) {
-      await canvasOk(`изголовье «${option}»`);
-      checkNoErrorsSince(before, `изголовье «${option}»`);
-      const pressed = await page
-        .getByRole('group', { name: 'Тип изголовья', exact: true })
-        .getByRole('button', { name: option, exact: true })
-        .getAttribute('aria-pressed');
-      check(pressed === 'true', `изголовье «${option}» выбрано`, String(pressed));
+    if (!clicked) continue;
+    await canvasOk(`изголовье «${clicked.option}»`);
+    checkNoErrorsSince(before, `изголовье «${clicked.option}»`);
+    const pressed = await page
+      .getByRole('group', { name: 'Тип изголовья', exact: true })
+      .getByRole('button', { name: clicked.option, exact: true })
+      .getAttribute('aria-pressed');
+    check(pressed === 'true', `изголовье «${clicked.option}» выбрано`, String(pressed));
+    const expectSide = clicked.option.includes('Угловая');
+    const currentSideGroup = await findGroup(['Сторона стенки', 'Сторона изголовья']);
+    check(
+      Boolean(currentSideGroup) === expectSide,
+      `сторона стенки ${expectSide ? 'есть' : 'скрыта'} для «${clicked.option}»`,
+      String(currentSideGroup),
+    );
+    if (expectSide) {
+      check(
+        (await page.getByLabel('Длина стенки').count()) > 0,
+        `для «${clicked.option}» есть поле «Длина стенки»`,
+      );
+      check(
+        (await page.getByLabel('Высота стенки').count()) > 0,
+        `для «${clicked.option}» есть поле «Высота стенки»`,
+      );
     }
   }
 
@@ -321,11 +622,20 @@ try {
     const raw = readFileSync(file, 'utf8').replace(/^\uFEFF/, '');
     csvLines = raw.split(/\r?\n/).filter((line) => line.trim().length > 0);
     csvRows = csvLines.length - 1;
+    const detailLabels = csvLines.slice(1).map((line) => line.split(';')[1]);
     console.log('CSV: строк данных =', csvRows, '| первая строка:', csvLines[0]);
-    console.log('CSV: названия деталей:', csvLines.slice(1).map((l) => l.split(';')[1]).join(', '));
+    console.log('CSV: названия деталей:', detailLabels.join(', '));
     check(csvRows > 8, 'CSV: строк деталей > 8', `строк данных ${csvRows}`);
-    check(raw.includes('Изголовье'), 'CSV: есть деталь «Изголовье»');
-    check(raw.includes('Фасад ящика с вырезом'), 'CSV: есть «Фасад ящика с вырезом»');
+    check(
+      detailLabels.includes('Фасад ящика с вырезом'),
+      'CSV: есть «Фасад ящика с вырезом»',
+      detailLabels.join(', '),
+    );
+    check(
+      detailLabels.some((label) => label === 'Спинка-полка' || label === 'Стенка по длине' || label === 'Изголовье'),
+      'CSV: есть деталь изголовья (спинка-полка / стенка)',
+      detailLabels.join(', '),
+    );
   }
   checkNoErrorsSince(errorsBeforeCsv, 'CSV');
 

@@ -33,7 +33,7 @@ import { bodyColor, deckColor, hex } from '../lib/materials';
 import { areaM2, mm, num, rub } from '../lib/format';
 import { SITE } from '../lib/site';
 import type { BedPanelProps } from '../lib/ui-contract';
-import { Block, Chip, Counter, DimField, Segmented, SwatchGroup, SwitchRow } from './controls';
+import { Block, Chip, Counter, DimField, Segmented, SwatchGroup } from './controls';
 import './ui.css';
 
 /* ---------- Постоянные списки опций ---------- */
@@ -47,8 +47,8 @@ const HEADBOARD_OPTIONS = HEADBOARD_ORDER.map((id) => ({
   label: BED_HEADBOARD_LABEL[id],
 }));
 
-/** Сторона углового изголовья и «волны». */
-const SIDE_OPTIONS: Array<{ id: BedParams['headboardSide']; label: string }> = [
+/** Сторона высокой стенки по длине кровати. */
+const SIDE_OPTIONS: Array<{ id: BedParams['wallSide']; label: string }> = [
   { id: 'left', label: BED_SIDE_LABEL.left },
   { id: 'right', label: BED_SIDE_LABEL.right },
 ];
@@ -203,29 +203,54 @@ export function BedPanel({
           />
         </div>
 
+        {params.headboard !== 'none' ? (
+          <DimField
+            label="Высота спинки"
+            value={params.headboardHeight}
+            min={BED_LIMITS.headboardHeight.min}
+            max={BED_LIMITS.headboardHeight.max}
+            step={BED_LIMITS.headboardHeight.step}
+            quick={HEADBOARD_STEP}
+            hint="над столешницей"
+            onChange={(headboardHeight) => onChange({ ...params, headboardHeight })}
+          />
+        ) : null}
+
         {hasSide ? (
           <>
             <Segmented
-              label="Сторона изголовья"
-              value={params.headboardSide}
+              label="Сторона стенки"
+              value={params.wallSide}
               options={SIDE_OPTIONS}
-              onChange={(headboardSide) => onChange({ ...params, headboardSide })}
+              onChange={(wallSide) => onChange({ ...params, wallSide })}
             />
             <DimField
-              label="Высота спинки"
-              value={params.headboardHeight}
-              min={BED_LIMITS.headboardHeight.min}
-              max={BED_LIMITS.headboardHeight.max}
-              step={BED_LIMITS.headboardHeight.step}
+              label="Высота стенки"
+              value={params.wallHeight}
+              min={BED_LIMITS.wallHeight.min}
+              max={BED_LIMITS.wallHeight.max}
+              step={BED_LIMITS.wallHeight.step}
               quick={HEADBOARD_STEP}
               hint="над столешницей"
-              onChange={(headboardHeight) => onChange({ ...params, headboardHeight })}
+              onChange={(wallHeight) => onChange({ ...params, wallHeight })}
+            />
+            <DimField
+              label="Длина стенки"
+              value={params.wallLength}
+              min={BED_LIMITS.wallLength.min}
+              max={BED_LIMITS.wallLength.max}
+              step={BED_LIMITS.wallLength.step}
+              quick={HEADBOARD_STEP}
+              hint={`от изголовья, не более ${num(Math.max(params.length - 200, BED_LIMITS.wallLength.min))}`}
+              onChange={(wallLength) => onChange({ ...params, wallLength })}
             />
           </>
         ) : null}
 
         {params.headboard === 'wave' ? (
-          <p className="ui-note">Плавный спуск подрезается по месту, как на фото.</p>
+          <p className="ui-note">
+            Стенка идёт по длине кровати, её конец скруглён к столешнице — как на фото.
+          </p>
         ) : null}
       </Block>
 
@@ -297,7 +322,7 @@ export function BedPanel({
       {/* ---------- Материалы ---------- */}
       <Block
         title="Материалы"
-        note="Как на фото: белый корпус, дубовая столешница и изголовье. Декор столешницы может совпадать с корпусом."
+        note="Как на фото: белый корпус, дубовые столешница и изголовье. Задняя стенка — жёсткая, ЛДСП 16 мм: кровать рассчитана на человека. Декор столешницы может совпадать с корпусом."
       >
         <div className="ui-sub">
           <div className="ui-sub-head">
@@ -324,18 +349,6 @@ export function BedPanel({
             value={params.deck}
             options={deckSwatches}
             onChange={(deck) => onChange({ ...params, deck })}
-          />
-        </div>
-      </Block>
-
-      {/* ---------- Дополнительно ---------- */}
-      <Block title="Дополнительно">
-        <div className="ui-switch-list">
-          <SwitchRow
-            label="Задняя стенка ДВП"
-            hint="Защищает от пыли и держит корпус в геометрии"
-            checked={params.backPanel}
-            onChange={(backPanel) => onChange({ ...params, backPanel })}
           />
         </div>
       </Block>

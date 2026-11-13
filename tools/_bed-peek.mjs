@@ -1,7 +1,6 @@
-/** Временный быстрый просмотр кровати (удаляется после проверки). */
+/** Временный просмотр кровати (удаляется после проверки). */
 import { chromium } from 'playwright-core';
 
-const url = 'http://127.0.0.1:5174';
 const browser = await chromium.connectOverCDP('http://127.0.0.1:9222');
 const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
 const page = await context.newPage();
@@ -18,46 +17,29 @@ const shot = async (name, wait = 900) => {
 };
 
 try {
-  await page.goto(url, { waitUntil: 'networkidle', timeout: 45000 });
+  await page.goto('http://127.0.0.1:5174', { waitUntil: 'networkidle', timeout: 45000 });
   await page.waitForTimeout(1200);
   await page.getByRole('button', { name: 'Кровать', exact: true }).click();
-  await shot('peek2-01-default', 1600);
-
-  await page.getByRole('button', { name: 'Открыть ящики' }).click();
-  await shot('peek2-02-drawers', 1300);
-  await page.getByRole('button', { name: 'Задвинуть ящики' }).click();
-  await page.waitForTimeout(600);
-
-  await page.getByRole('button', { name: 'Спереди', exact: true }).click();
-  await shot('peek2-03-front', 1000);
+  await page.waitForTimeout(1400);
+  const pre = await page.evaluate(() => ({
+    price: document.querySelector('.ui-price-value')?.textContent,
+    head: document.querySelector('.ui-head-sub')?.textContent,
+    meta: document.querySelector('.ui-price-meta')?.textContent,
+  }));
+  console.log('DEFAULT', JSON.stringify(pre));
+  await shot('tmp-bed-01', 600);
   await page.getByRole('button', { name: 'Сбоку', exact: true }).click();
-  await shot('peek2-04-side', 1000);
+  await shot('tmp-bed-02', 1000);
   await page.getByRole('button', { name: '3/4', exact: true }).click();
-  await page.waitForTimeout(800);
-
   await page.getByRole('button', { name: 'Угловая', exact: true }).click();
-  await shot('peek2-05-corner', 1500);
-
-  await page.getByRole('button', { name: 'Подиум', exact: true }).click();
-  await shot('peek2-06-podium', 1500);
-
-  await page.getByRole('button', { name: 'Двуспальная', exact: true }).click();
-  await shot('peek2-07-double', 1500);
-
-  await page.getByRole('button', { name: 'Как на фото', exact: true }).click();
-  await page.waitForTimeout(1200);
-  await page.getByRole('button', { name: 'Слева', exact: true }).click();
-  await shot('peek2-08-wave-left', 1600);
-
+  await shot('tmp-bed-03', 1500);
+  await page.getByRole('button', { name: 'Открыть ящики' }).click();
+  await shot('tmp-bed-04', 1300);
   const info = await page.evaluate(() => ({
-    title: document.title,
-    canvas: (() => {
-      const c = document.querySelector('canvas');
-      return c ? `${c.width}x${c.height}` : null;
-    })(),
+    panel: document.querySelector('.panel')?.innerText.slice(0, 900),
     price: document.querySelector('.ui-price-value')?.textContent,
   }));
-  console.log(JSON.stringify(info));
+  console.log(JSON.stringify(info, null, 1));
 } catch (error) {
   console.log('EXCEPTION:', error.message);
 } finally {

@@ -25,7 +25,8 @@ import {
 import { buildTumbaParts, type TumbaParams } from './tumba';
 import {
   BED_HANDLE_LABEL,
-  bedHeadboardSummary,
+  BED_HEADBOARD_LABEL,
+  BED_SIDE_SHORT,
   buildBedParts,
   type BedLayout,
   type BedParams,
@@ -101,17 +102,21 @@ export function buildBedQuoteText(
   layout: BedLayout,
   price: PriceResult,
 ): string {
+  const hasWall = params.headboard === 'corner' || params.headboard === 'wave';
   const headboard =
     params.headboard === 'none'
       ? 'без изголовья'
-      : `${bedHeadboardSummary(params)}, ${num(params.headboardHeight)} мм`;
+      : `${BED_HEADBOARD_LABEL[params.headboard]} · спинка ${num(params.headboardHeight)} мм` +
+        (hasWall
+          ? ` · стенка по длине ${num(params.wallLength)} × ${num(params.wallHeight)} мм (${BED_SIDE_SHORT[params.wallSide]})`
+          : '');
   return [
     `Кровать с ящиками — конфигурация с сайта ${SITE.name}`,
     `Спальное место: ${num(layout.width)} × ${num(layout.length)} мм · высота каркаса ${num(layout.height)} мм`,
     `Изголовье: ${headboard}`,
     `Ящики: ${layout.drawerFronts.length} · ручки: ${BED_HANDLE_LABEL[params.handles].toLowerCase()}`,
     `Основание: ${BASE_LABEL[params.base]} ${layout.baseH > 0 ? `${num(layout.baseH)} мм` : ''}`.trim(),
-    `Корпус: ${BODY_LABEL[params.body]} · столешница и изголовье: ${BODY_LABEL[params.deck]}${params.backPanel ? ' · задняя стенка ДВП' : ''}`,
+    `Корпус: ${BODY_LABEL[params.body]} · столешница и изголовье: ${BODY_LABEL[params.deck]} · задняя стенка жёсткая, ЛДСП 16 мм`,
     `Ориентировочная цена: ${num(price.total)} ₽ (изделие ${num(price.goods)} ₽ + монтаж ${num(price.assembly)} ₽ + доставка ${num(price.delivery)} ₽)`,
     'Матрас в цену не входит. Прошу уточнить стоимость и сроки.',
   ].join('\n');
